@@ -3,7 +3,7 @@
 
 
 
-ofxAutoReloadedShader::ofxAutoReloadedShader(){
+ofxAutoReloadedShader::ofxAutoReloadedShader() : type(TYPE::other) {
 	bWatchingFiles = false;
 }
 
@@ -81,6 +81,26 @@ bool ofxAutoReloadedShader::load(string vertName, string fragName, string geomNa
 	return linkProgram();
 }
 
+bool ofxAutoReloadedShader::loadCompute(const std::filesystem::path& shaderName)
+{
+	type = TYPE::compute;
+
+	lastTimeCheckMillis = ofGetElapsedTimeMillis();
+	setMillisBetweenFileCheck(2 * 1000);
+	enableWatchFiles();
+
+	loadShaderNextFrame = false;
+
+	computeShaderFilename = shaderName.string();
+	computeShaderFile.clear();
+	computeShaderFile = ofFile(ofToDataPath(computeShaderFilename));
+
+	fileChangedTimes.clear();
+	fileChangedTimes.push_back(getLastModified(computeShaderFile));
+
+	return ofShader::loadCompute(shaderName);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------------------------------
 //
 void ofxAutoReloadedShader::_update(ofEventArgs &e)
@@ -110,7 +130,10 @@ void ofxAutoReloadedShader::_update(ofEventArgs &e)
 //
 bool ofxAutoReloadedShader::reloadShaders()
 {
-	return load( vertexShaderFilename,  fragmentShaderFilename, geometryShaderFilename );
+	if (type == TYPE::compute)
+		return loadCompute(computeShaderFilename);
+	else
+		return load( vertexShaderFilename,  fragmentShaderFilename, geometryShaderFilename );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -166,6 +189,17 @@ bool ofxAutoReloadedShader::filesChanged()
 		if( geometryShaderFileLastChangeTime != fileChangedTimes.at(2) )
 		{
 			fileChangedTimes.at(2) = geometryShaderFileLastChangeTime;
+			fileChanged = true;
+		}
+	}
+	
+
+	if (computeShaderFile.exists() && type == TYPE::compute)
+	{
+		std::time_t computeShaderFileLastChangeTime = getLastModified(computeShaderFile);
+		if (computeShaderFileLastChangeTime != fileChangedTimes.at(0))
+		{
+			fileChangedTimes.at(0) = computeShaderFileLastChangeTime;
 			fileChanged = true;
 		}
 	}

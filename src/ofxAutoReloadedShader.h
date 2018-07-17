@@ -12,7 +12,8 @@ class ofxAutoReloadedShader : public ofShader
 	// override the initialisation functions
 	bool load(string shaderName );
 	bool load(string vertName, string fragName, string geomName);
-	
+	bool loadCompute(const std::filesystem::path& shaderName);
+
 	bool reloadShaders();
 	
 	void enableWatchFiles();
@@ -34,6 +35,8 @@ private:
 	bool loadShaderNextFrame;
 	
 	std::time_t getLastModified( ofFile& _file );
+
+	enum struct TYPE { compute, other }; TYPE type;
 	
 	int lastTimeCheckMillis;
 	int millisBetweenFileCheck;
@@ -41,10 +44,12 @@ private:
 	string vertexShaderFilename;
 	string fragmentShaderFilename;
 	string geometryShaderFilename;
+	string computeShaderFilename;
 	
 	ofFile vertexShaderFile;
 	ofFile fragmentShaderFile;
 	ofFile geometryShaderFile;
+	ofFile computeShaderFile;
 	
 	vector< std::time_t > fileChangedTimes;
     
